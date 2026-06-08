@@ -1,3 +1,5 @@
+const SPREADSHEET_ID = "1wcQdpN_KRwj4a5Cs0BElNjuQMwUqdfLY9UrwcCnE_18";
+
 const SHEET_HEADERS = {
   "批次总表": ["批次ID", "批次名称", "批次编号", "入库日期"],
   "面料颜色": ["面料ID", "批次名称", "颜色", "色值", "米数", "公斤", "状态", "备注"],
@@ -21,7 +23,7 @@ function doPost(e) {
   try {
     const payload = JSON.parse((e.postData && e.postData.contents) || "{}");
     const sheets = payload.sheets || {};
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
     Object.keys(SHEET_HEADERS).forEach(name => {
       if (name === "备份日志") return;
