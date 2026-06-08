@@ -605,7 +605,7 @@
       background: rgba(245,245,247,.78);
       padding: 14px;
       display:grid;
-      grid-template-columns: 1.4fr .6fr .5fr auto;
+      grid-template-columns: minmax(160px, 1.4fr) repeat(4, minmax(96px, .7fr)) auto;
       gap: 10px;
       align-items: center;
     }
@@ -697,6 +697,85 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    .modal-root[hidden] { display:none; }
+
+    .modal-root {
+      position:fixed;
+      inset:0;
+      z-index:200;
+      display:grid;
+      place-items:center;
+      padding:24px;
+      background: rgba(0,0,0,.32);
+      backdrop-filter: blur(18px);
+    }
+
+    .modal-card {
+      width:min(920px, 100%);
+      max-height:min(86vh, 820px);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.7);
+      border-radius:28px;
+      background: rgba(250,250,252,.94);
+      box-shadow: 0 30px 100px rgba(0,0,0,.24);
+      display:flex;
+      flex-direction:column;
+    }
+
+    .modal-head, .modal-actions {
+      padding:18px 20px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      border-bottom:1px solid var(--hairline);
+    }
+
+    .modal-head h3 {
+      margin:0;
+      font-size:18px;
+      letter-spacing:0;
+    }
+
+    .modal-body {
+      overflow:auto;
+      padding:20px;
+      display:grid;
+      gap:16px;
+    }
+
+    .modal-actions {
+      border-top:1px solid var(--hairline);
+      border-bottom:0;
+      justify-content:flex-end;
+      background: rgba(255,255,255,.7);
+    }
+
+    .modal-product-list {
+      display:grid;
+      gap:10px;
+    }
+
+    .modal-product-row {
+      display:grid;
+      grid-template-columns: minmax(150px, 1.2fr) repeat(4, minmax(82px, .65fr)) auto;
+      gap:10px;
+      align-items:center;
+      padding:12px;
+      border:1px solid var(--hairline);
+      border-radius:18px;
+      background:rgba(255,255,255,.72);
+    }
+
+    .modal-product-row input {
+      width:100%;
+      min-height:40px;
+      border:1px solid var(--hairline);
+      border-radius:14px;
+      padding:10px 12px;
+      background:rgba(245,245,247,.9);
+    }
+
     @media (max-width: 1180px) {
       .kpi-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .field-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -708,6 +787,7 @@
       .topbar { grid-template-columns: 1fr; }
       .top-actions { justify-content:flex-start; }
       .product-row { grid-template-columns: 1fr 1fr; }
+      .modal-product-row { grid-template-columns: 1fr 1fr; }
       .sku-note-row { grid-template-columns: 1fr; }
       .kpi-row { grid-template-columns: 1fr; }
       .field-grid { grid-template-columns: 1fr; }
@@ -722,6 +802,7 @@
       .searchbar { width:100%; }
       .tab-btn { padding: 0 14px; }
       .product-row { grid-template-columns: 1fr; }
+      .modal-product-row { grid-template-columns: 1fr; }
       .color-main-grid, .sku-main-grid, .plan-product-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
@@ -824,6 +905,7 @@
   </div>
 
   <div class="toast" id="toast">已保存</div>
+  <div class="modal-root" id="modalRoot" hidden></div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -835,15 +917,15 @@
     const CLOUD_DOCUMENT = "mps-master-production-schedule";
 
     const FIREBASE_CONFIG = {
-      apiKey: "",
+      apiKey: "AIzaSyDL5vJQXDM-VJzOE6FPsx8oc3Xw97yi8SE",
       authDomain: "spms-bom.firebaseapp.com",
       projectId: "spms-bom",
-      storageBucket: "spms-bom.appspot.com",
-      messagingSenderId: "",
-      appId: ""
+      storageBucket: "spms-bom.firebasestorage.app",
+      messagingSenderId: "158271153511",
+      appId: "1:158271153511:web:37a3226642140708577bc2"
     };
 
-    const GOOGLE_SHEETS_WEBAPP_URL = "";
+    const GOOGLE_SHEETS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzgcqPYCd2RhhBP_R7vNoe7_3eYYUkEAVFyenYj2vpuolDD1M3WIDUrgTiDWjU4x9iT/exec";
 
     const defaultData = {
       batches: [
@@ -861,9 +943,9 @@
           status: "生产中",
           note: "第一批白色面料，优先用于六月订单。",
           usage: [
-            { id: "us-001", product: "白色基础款T恤", qty: 860, unit: "件" },
-            { id: "us-002", product: "白色短裤套装", qty: 320, unit: "套" },
-            { id: "us-003", product: "童装白色背心", qty: 510, unit: "件" }
+            { id: "us-001", product: "白色基础款T恤", size: "S-XL", color: "白色", qty: 860, unit: "件" },
+            { id: "us-002", product: "白色短裤套装", size: "S-L", color: "白色", qty: 320, unit: "套" },
+            { id: "us-003", product: "童装白色背心", size: "90-140", color: "白色", qty: 510, unit: "件" }
           ]
         },
         {
@@ -876,8 +958,8 @@
           status: "待确认",
           note: "等待裁剪确认。",
           usage: [
-            { id: "us-004", product: "黑色运动裤", qty: 620, unit: "条" },
-            { id: "us-005", product: "黑色帽衫", qty: 280, unit: "件" }
+            { id: "us-004", product: "黑色运动裤", size: "M-XXL", color: "黑色", qty: 620, unit: "条" },
+            { id: "us-005", product: "黑色帽衫", size: "M-XL", color: "黑色", qty: 280, unit: "件" }
           ]
         },
         {
@@ -890,8 +972,8 @@
           status: "待确认",
           note: "需确认色差。",
           usage: [
-            { id: "us-006", product: "卡其工装裤", qty: 360, unit: "条" },
-            { id: "us-007", product: "卡其马甲", qty: 150, unit: "件" }
+            { id: "us-006", product: "卡其工装裤", size: "M-XL", color: "卡其", qty: 360, unit: "条" },
+            { id: "us-007", product: "卡其马甲", size: "M-L", color: "卡其", qty: 150, unit: "件" }
           ]
         }
       ],
@@ -1011,6 +1093,7 @@
       kpiSkuNotes: $("#kpiSkuNotes"),
       kpiAdmin: $("#kpiAdmin"),
       toast: $("#toast"),
+      modalRoot: $("#modalRoot"),
       tabBtns: document.querySelectorAll(".tab-btn"),
       tabPages: document.querySelectorAll(".tab-page"),
       fabricSearch: $("#fabricSearch"),
@@ -1042,14 +1125,36 @@
       return Boolean(value && value.batches && value.fabrics && value.planGroups && value.skus);
     }
 
+    function migrateData(value) {
+      const next = cloneData(value);
+      next.fabrics = (next.fabrics || []).map(f => ({
+        ...f,
+        usage: (f.usage || []).map(u => ({
+          id: u.id || uid("us"),
+          product: u.product || u.name || "",
+          size: u.size || "",
+          color: u.color || f.color || "",
+          qty: Number(u.qty || 0),
+          unit: u.unit || "件"
+        }))
+      }));
+      const seenSkuIds = new Set();
+      next.skus = (next.skus || []).filter(sku => {
+        if (!sku.id || seenSkuIds.has(sku.id)) return false;
+        seenSkuIds.add(sku.id);
+        return true;
+      });
+      return next;
+    }
+
     function loadData() {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return cloneData(defaultData);
+      if (!raw) return migrateData(defaultData);
       try {
         const parsed = JSON.parse(raw);
-        return isValidData(parsed) ? parsed : cloneData(defaultData);
+        return isValidData(parsed) ? migrateData(parsed) : migrateData(defaultData);
       } catch {
-        return cloneData(defaultData);
+        return migrateData(defaultData);
       }
     }
 
@@ -1095,6 +1200,35 @@
       return confirm(`确认删除${label}？删除后不可恢复。`);
     }
 
+    let activeModal = null;
+
+    function closeModal() {
+      activeModal = null;
+      els.modalRoot.hidden = true;
+      els.modalRoot.innerHTML = "";
+    }
+
+    function renderModal({ kind, id, title, body, saveAction, saveLabel = "确认保存" }) {
+      els.modalRoot.hidden = false;
+      els.modalRoot.innerHTML = `
+        <article class="modal-card" role="dialog" aria-modal="true" data-modal-kind="${escapeHtml(kind)}" data-modal-id="${escapeHtml(id)}">
+          <div class="modal-head">
+            <h3>${escapeHtml(title)}</h3>
+            <button class="btn icon" data-action="close-modal" aria-label="关闭">×</button>
+          </div>
+          <div class="modal-body">${body}</div>
+          <div class="modal-actions">
+            <button class="btn" data-action="close-modal">取消</button>
+            <button class="btn primary" data-action="${escapeHtml(saveAction)}" data-id="${escapeHtml(id)}">${escapeHtml(saveLabel)}</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderModalField(label, control, wide = false) {
+      return `<div class="field-card ${wide ? "wide" : ""}"><label>${escapeHtml(label)}</label>${control}</div>`;
+    }
+
     function monthLabel(month) {
       return `${Number(month.split("-")[1])}月份排产计划`;
     }
@@ -1126,6 +1260,26 @@
 
     function allPlanProducts() {
       return data.planGroups.flatMap(g => g.products.map(p => ({ ...p, month: g.month, groupId: g.id, groupTitle: g.title })));
+    }
+
+    function openBatchEditor(id, draft = null) {
+      if (!requireAdmin()) return;
+      const batch = draft || batchOf(id);
+      if (!batch) return;
+      activeModal = { kind: "batch", id: batch.id, isNew: Boolean(draft) };
+      renderModal({
+        kind: "batch",
+        id: batch.id,
+        title: `${draft ? "添加" : "修改"}面料批次`,
+        saveAction: "modal-save-batch",
+        body: `
+          <div class="field-grid">
+            ${renderModalField("批次名称", `<input data-modal-batch-field="name" value="${escapeHtml(batch.name || "")}" placeholder="例如：第一批面料" />`, true)}
+            ${renderModalField("批次编号", `<input data-modal-batch-field="code" value="${escapeHtml(batch.code || "")}" placeholder="AF-FABRIC-B01" />`)}
+            ${renderModalField("入库日期", `<input data-modal-batch-field="date" type="date" value="${escapeHtml(batch.date || "")}" />`)}
+          </div>
+        `
+      });
     }
 
     function renderAdmin() {
@@ -1161,7 +1315,7 @@
       const kw = els.fabricSearch.value.trim().toLowerCase();
       els.fabricStack.innerHTML = data.batches.map(batch => {
         const allFabrics = data.fabrics.filter(f => f.batchId === batch.id);
-        const rows = allFabrics.filter(f => !kw || [batch.name, batch.code, f.color, f.note, ...f.usage.map(u => u.product)].join(" ").toLowerCase().includes(kw));
+        const rows = allFabrics.filter(f => !kw || [batch.name, batch.code, f.color, f.note, ...f.usage.flatMap(u => [u.product, u.size, u.color])].join(" ").toLowerCase().includes(kw));
         const totalMeters = allFabrics.reduce((s,f) => s + Number(f.meters || 0), 0);
         const totalKg = allFabrics.reduce((s,f) => s + Number(f.kg || 0), 0);
         const open = openBatches.has(batch.id);
@@ -1213,19 +1367,18 @@
           <div class="row-body">
             <div class="row-body-inner">
               <div class="field-grid">
-                <div class="field-card"><label>颜色名称</label>${isAdmin ? `<input data-fabric-field="color" data-id="${f.id}" value="${escapeHtml(f.color)}" />` : `<div>${escapeHtml(f.color)}</div>`}</div>
-                <div class="field-card"><label>米数</label>${isAdmin ? `<input type="number" data-fabric-field="meters" data-id="${f.id}" value="${f.meters}" />` : `<div>${formatNum(f.meters)}m</div>`}</div>
-                <div class="field-card"><label>公斤</label>${isAdmin ? `<input type="number" data-fabric-field="kg" data-id="${f.id}" value="${f.kg}" />` : `<div>${formatNum(f.kg)}kg</div>`}</div>
-                <div class="field-card"><label>状态</label>${isAdmin ? `<select data-fabric-field="status" data-id="${f.id}"><option ${f.status==="待确认"?"selected":""}>待确认</option><option ${f.status==="生产中"?"selected":""}>生产中</option><option ${f.status==="已确认"?"selected":""}>已确认</option><option ${f.status==="已完成"?"selected":""}>已完成</option></select>` : `<div>${escapeHtml(f.status)}</div>`}</div>
-                <div class="field-card"><label>色值</label>${isAdmin ? `<input data-fabric-field="hex" data-id="${f.id}" value="${escapeHtml(f.hex)}" />` : `<div>${escapeHtml(f.hex)}</div>`}</div>
-                <div class="field-card wide"><label>备注</label>${isAdmin ? `<textarea data-fabric-field="note" data-id="${f.id}">${escapeHtml(f.note)}</textarea>` : `<div>${escapeHtml(f.note || "—")}</div>`}</div>
+                <div class="field-card"><label>颜色名称</label><div>${escapeHtml(f.color)}</div></div>
+                <div class="field-card"><label>米数</label><div>${formatNum(f.meters)}m</div></div>
+                <div class="field-card"><label>公斤</label><div>${formatNum(f.kg)}kg</div></div>
+                <div class="field-card"><label>状态</label><div>${escapeHtml(f.status)}</div></div>
+                <div class="field-card"><label>色值</label><div>${escapeHtml(f.hex)}</div></div>
+                <div class="field-card wide"><label>备注</label><div>${escapeHtml(f.note || "—")}</div></div>
               </div>
               <div class="sub-box">
                 <div class="sub-head">
                   <h4>可生产产品</h4>
                   <div class="line-actions">
-                    <button class="btn soft admin-only" data-action="add-product" data-fabric="${f.id}">添加产品</button>
-                    <button class="btn admin-only" data-action="save-fabric" data-id="${f.id}">修改数据</button>
+                    <button class="btn admin-only" data-action="edit-fabric" data-id="${f.id}">修改数据</button>
                     <button class="btn danger admin-only" data-action="delete-fabric" data-id="${f.id}">删除颜色</button>
                   </div>
                 </div>
@@ -1240,24 +1393,73 @@
     }
 
     function renderFabricProduct(fabricId, u) {
-      if (isAdmin) {
-        return `
-          <div class="product-row" data-usage-row="${u.id}">
-            <input data-usage-field="product" data-fabric="${fabricId}" data-usage="${u.id}" value="${escapeHtml(u.product)}" placeholder="产品名称" />
-            <input data-usage-field="qty" data-fabric="${fabricId}" data-usage="${u.id}" type="number" value="${u.qty}" placeholder="数量" />
-            <input data-usage-field="unit" data-fabric="${fabricId}" data-usage="${u.id}" value="${escapeHtml(u.unit || "件")}" placeholder="单位" />
-            <button class="btn danger icon admin-only" data-action="delete-product" data-fabric="${fabricId}" data-usage="${u.id}">×</button>
-          </div>
-        `;
-      }
       return `
         <div class="product-row">
           <div class="metric-wrap"><b>${escapeHtml(u.product)}</b><span>产品名称</span></div>
+          <div class="metric-wrap"><b>${escapeHtml(u.size || "—")}</b><span>产品尺码</span></div>
+          <div class="metric-wrap"><b>${escapeHtml(u.color || "—")}</b><span>产品颜色</span></div>
           <div class="metric-wrap"><b>${formatNum(u.qty)}</b><span>数量</span></div>
           <div class="metric-wrap"><b>${escapeHtml(u.unit || "件")}</b><span>单位</span></div>
-          <span class="inline-hint">只读</span>
         </div>
       `;
+    }
+
+    function renderFabricEditorProduct(u = {}) {
+      const id = u.id || uid("us");
+      return `
+        <div class="modal-product-row" data-modal-usage-row="${escapeHtml(id)}">
+          <input data-modal-usage-field="product" value="${escapeHtml(u.product || "")}" placeholder="产品名称" />
+          <input data-modal-usage-field="size" value="${escapeHtml(u.size || "")}" placeholder="产品尺码" />
+          <input data-modal-usage-field="color" value="${escapeHtml(u.color || "")}" placeholder="产品颜色" />
+          <input data-modal-usage-field="qty" type="number" min="0" step="1" value="${Number(u.qty || 0)}" placeholder="数量" />
+          <input data-modal-usage-field="unit" value="${escapeHtml(u.unit || "件")}" placeholder="单位" />
+          <button class="btn danger icon" data-action="modal-delete-fabric-product">×</button>
+        </div>
+      `;
+    }
+
+    function openFabricEditor(id, draft = null) {
+      if (!requireAdmin()) return;
+      const f = draft || findFabric(id);
+      if (!f) return;
+      activeModal = { kind: "fabric", id: f.id, isNew: Boolean(draft), batchId: f.batchId };
+      renderModal({
+        kind: "fabric",
+        id: f.id,
+        title: `${draft ? "添加" : "修改"}面料颜色数据`,
+        saveAction: "modal-save-fabric",
+        body: `
+          <div class="field-grid">
+            ${renderModalField("颜色名称", `<input data-modal-fabric-field="color" value="${escapeHtml(f.color || "")}" placeholder="例如：白色" />`)}
+            ${renderModalField("色值", `<input data-modal-fabric-field="hex" value="${escapeHtml(f.hex || "#ffffff")}" placeholder="#ffffff" />`)}
+            ${renderModalField("米数", `<input data-modal-fabric-field="meters" type="number" min="0" step="0.01" value="${Number(f.meters || 0)}" />`)}
+            ${renderModalField("公斤", `<input data-modal-fabric-field="kg" type="number" min="0" step="0.01" value="${Number(f.kg || 0)}" />`)}
+            ${renderModalField("状态", `
+              <select data-modal-fabric-field="status">
+                ${["待确认", "生产中", "已确认", "已完成"].map(status => `<option ${status === f.status ? "selected" : ""}>${status}</option>`).join("")}
+              </select>
+            `)}
+            ${renderModalField("备注", `<textarea data-modal-fabric-field="note" placeholder="填写面料备注">${escapeHtml(f.note || "")}</textarea>`, true)}
+          </div>
+          <div class="sub-box">
+            <div class="sub-head">
+              <h4>可生产产品</h4>
+              <div class="line-actions">
+                <button class="btn soft" data-action="modal-add-fabric-product">添加产品</button>
+              </div>
+            </div>
+            <div class="modal-product-list" data-modal-fabric-products>
+              ${(f.usage || []).length ? f.usage.map(renderFabricEditorProduct).join("") : renderFabricEditorProduct({ color: f.color, unit: "件" })}
+            </div>
+          </div>
+        `
+      });
+    }
+
+    function addFabricUsageRowToModal() {
+      const list = els.modalRoot.querySelector("[data-modal-fabric-products]");
+      if (!list) return;
+      list.insertAdjacentHTML("beforeend", renderFabricEditorProduct({ unit: "件" }));
     }
 
     function renderPlanPage() {
@@ -1319,8 +1521,7 @@
                 <div class="sub-head">
                   <h4>产品明细</h4>
                   <div class="line-actions">
-                    <button class="btn soft admin-only" data-action="add-plan-product" data-group="${g.id}">添加产品</button>
-                    <button class="btn admin-only" data-action="save-plan-group" data-id="${g.id}">修改数据</button>
+                    <span class="inline-hint">进入管理员模式后点击上方“修改数据”统一编辑。</span>
                   </div>
                 </div>
                 <div class="sub-list">
@@ -1334,17 +1535,6 @@
     }
 
     function renderPlanProduct(groupId, p) {
-      if (isAdmin) {
-        return `
-          <div class="product-row" data-plan-product="${p.id}">
-            <input data-plan-field="name" data-group="${groupId}" data-product="${p.id}" value="${escapeHtml(p.name)}" placeholder="产品名称" />
-            <input data-plan-field="size" data-group="${groupId}" data-product="${p.id}" value="${escapeHtml(p.size)}" placeholder="产品尺码" />
-            <input data-plan-field="color" data-group="${groupId}" data-product="${p.id}" value="${escapeHtml(p.color)}" placeholder="产品颜色" />
-            <input data-plan-field="qty" data-group="${groupId}" data-product="${p.id}" type="number" value="${p.qty}" placeholder="产品数量" />
-            <button class="btn danger icon admin-only" data-action="delete-plan-product" data-group="${groupId}" data-product="${p.id}">×</button>
-          </div>
-        `;
-      }
       return `
         <div class="product-row">
           <div class="metric-wrap"><b>${escapeHtml(p.name)}</b><span>产品名称</span></div>
@@ -1353,6 +1543,70 @@
           <div class="metric-wrap"><b>${formatNum(p.qty)}</b><span>产品数量</span></div>
         </div>
       `;
+    }
+
+    function renderPlanEditorProduct(p = {}) {
+      const id = p.id || uid("pp");
+      return `
+        <div class="modal-product-row" data-modal-plan-row="${escapeHtml(id)}">
+          <input data-modal-plan-product-field="name" value="${escapeHtml(p.name || "")}" placeholder="产品名称" />
+          <input data-modal-plan-product-field="size" value="${escapeHtml(p.size || "")}" placeholder="产品尺码" />
+          <input data-modal-plan-product-field="color" value="${escapeHtml(p.color || "")}" placeholder="产品颜色" />
+          <input data-modal-plan-product-field="qty" type="number" min="0" step="1" value="${Number(p.qty || 0)}" placeholder="产品数量" />
+          <span class="inline-hint">件/套</span>
+          <button class="btn danger icon" data-action="modal-delete-plan-product">×</button>
+        </div>
+      `;
+    }
+
+    function openPlanEditor(id, draft = null) {
+      if (!requireAdmin()) return;
+      const g = draft || data.planGroups.find(x => x.id === id);
+      if (!g) return;
+      activeModal = { kind: "plan", id: g.id, isNew: Boolean(draft), month: g.month };
+      renderModal({
+        kind: "plan",
+        id: g.id,
+        title: `${draft ? "新增" : "修改"}${monthLabel(g.month)}日计划`,
+        saveAction: "modal-save-plan-group",
+        body: `
+          <div class="field-grid">
+            ${renderModalField("日计划", `<input data-modal-plan-field="title" value="${escapeHtml(g.title || "")}" placeholder="例如：6月12日计划" />`, true)}
+            ${renderModalField("交货时间", `<input data-modal-plan-field="delivery" type="date" value="${escapeHtml(g.delivery || "")}" />`)}
+            ${renderModalField("ETD", `<input data-modal-plan-field="etd" type="date" value="${escapeHtml(g.etd || "")}" />`)}
+            ${renderModalField("ETA", `<input data-modal-plan-field="eta" type="date" value="${escapeHtml(g.eta || "")}" />`)}
+            ${renderModalField("交货状态", `
+              <select data-modal-plan-field="deliveryStatus">
+                ${["待确认", "待订舱", "待装柜", "待交货", "生产中", "已出运", "已交货", "已完成"].map(status => `<option ${status === g.deliveryStatus ? "selected" : ""}>${status}</option>`).join("")}
+              </select>
+            `)}
+            ${renderModalField("紧急程度", `
+              <select data-modal-plan-field="urgent">
+                <option value="false" ${!g.urgent ? "selected" : ""}>普通</option>
+                <option value="true" ${g.urgent ? "selected" : ""}>紧急</option>
+              </select>
+            `)}
+            ${renderModalField("备注", `<textarea data-modal-plan-field="note" placeholder="填写出货备注">${escapeHtml(g.note || "")}</textarea>`, true)}
+          </div>
+          <div class="sub-box">
+            <div class="sub-head">
+              <h4>产品明细</h4>
+              <div class="line-actions">
+                <button class="btn soft" data-action="modal-add-plan-product">添加产品</button>
+              </div>
+            </div>
+            <div class="modal-product-list" data-modal-plan-products>
+              ${(g.products || []).length ? g.products.map(renderPlanEditorProduct).join("") : renderPlanEditorProduct()}
+            </div>
+          </div>
+        `
+      });
+    }
+
+    function addPlanProductRowToModal() {
+      const list = els.modalRoot.querySelector("[data-modal-plan-products]");
+      if (!list) return;
+      list.insertAdjacentHTML("beforeend", renderPlanEditorProduct());
     }
 
     function renderSkuPage() {
@@ -1379,6 +1633,7 @@
               <div class="metric-wrap"><b>${escapeHtml(sku.color)}</b><span>产品颜色</span></div>
               <div class="head-actions">
                 <span class="badge">${(sku.standards || []).length} 个事项</span>
+                <button class="btn admin-only" data-action="edit-sku" data-id="${sku.id}">修改数据</button>
                 <button class="btn danger admin-only" data-action="delete-sku" data-id="${sku.id}">删除 SKU</button>
               </div>
             </div>
@@ -1386,20 +1641,18 @@
           <div class="row-body">
             <div class="row-body-inner">
               <div class="field-grid">
-                <div class="field-card"><label>SKU 编号</label>${isAdmin ? `<input data-sku-field="sku" data-id="${sku.id}" value="${escapeHtml(sku.sku)}" />` : `<div>${escapeHtml(sku.sku)}</div>`}</div>
-                <div class="field-card"><label>产品名称</label>${isAdmin ? `<input data-sku-field="name" data-id="${sku.id}" value="${escapeHtml(sku.name)}" />` : `<div>${escapeHtml(sku.name)}</div>`}</div>
-                <div class="field-card"><label>产品尺码</label>${isAdmin ? `<input data-sku-field="size" data-id="${sku.id}" value="${escapeHtml(sku.size)}" />` : `<div>${escapeHtml(sku.size)}</div>`}</div>
-                <div class="field-card"><label>产品颜色</label>${isAdmin ? `<input data-sku-field="color" data-id="${sku.id}" value="${escapeHtml(sku.color)}" />` : `<div>${escapeHtml(sku.color)}</div>`}</div>
-                <div class="field-card wide"><label>备注</label>${isAdmin ? `<textarea data-sku-field="note" data-id="${sku.id}">${escapeHtml(sku.note)}</textarea>` : `<div>${escapeHtml(sku.note || "—")}</div>`}</div>
+                <div class="field-card"><label>SKU 编号</label><div>${escapeHtml(sku.sku)}</div></div>
+                <div class="field-card"><label>产品名称</label><div>${escapeHtml(sku.name)}</div></div>
+                <div class="field-card"><label>产品尺码</label><div>${escapeHtml(sku.size)}</div></div>
+                <div class="field-card"><label>产品颜色</label><div>${escapeHtml(sku.color)}</div></div>
+                <div class="field-card wide"><label>备注</label><div>${escapeHtml(sku.note || "—")}</div></div>
               </div>
 
               <div class="sub-box">
                 <div class="sub-head">
                   <h4>图片与标注信息</h4>
                   <div class="line-actions">
-                    <span class="inline-hint">点击产品行展开后，在这里上传图片并填写标注信息。</span>
-                    <button class="btn soft admin-only" data-action="add-sku-note" data-id="${sku.id}">新增图片事项</button>
-                    <button class="btn admin-only" data-action="save-sku" data-id="${sku.id}">修改数据</button>
+                    <span class="inline-hint">进入管理员模式后点击上方“修改数据”统一编辑。</span>
                   </div>
                 </div>
                 <div class="sub-list">
@@ -1413,20 +1666,6 @@
     }
 
     function renderSkuNote(skuId, note) {
-      if (isAdmin) {
-        return `
-          <div class="sku-note-row" data-sku-note="${note.id}">
-            <div>
-              <div class="preview">${note.image ? `<img src="${note.image}" alt="sku-note" />` : "暂无图片"}</div>
-              <input style="margin-top:10px;" type="file" accept="image/*" data-note-file="${note.id}" data-sku="${skuId}" />
-            </div>
-            <div>
-              <textarea data-note-text="${note.id}" data-sku="${skuId}" placeholder="填写图片对应标注信息，例如辅料、尺寸、包装、位置要求等">${escapeHtml(note.text || "")}</textarea>
-            </div>
-            <button class="btn danger admin-only" data-action="delete-sku-note" data-sku="${skuId}" data-note="${note.id}">删除事项</button>
-          </div>
-        `;
-      }
       return `
         <div class="sku-note-row">
           <div class="preview">${note.image ? `<img src="${note.image}" alt="sku-note" />` : "暂无图片"}</div>
@@ -1437,6 +1676,62 @@
           <span class="inline-hint">只读</span>
         </div>
       `;
+    }
+
+    function renderSkuEditorNote(note = {}) {
+      const id = note.id || uid("sn");
+      return `
+        <div class="sku-note-row" data-modal-sku-note="${escapeHtml(id)}" data-existing-image="${escapeHtml(note.image || "")}">
+          <div>
+            <div class="preview">${note.image ? `<img src="${note.image}" alt="sku-note" />` : "暂无图片"}</div>
+            <input style="margin-top:10px;" type="file" accept="image/*" data-note-file="${escapeHtml(id)}" />
+          </div>
+          <div>
+            <textarea data-note-text="${escapeHtml(id)}" placeholder="填写图片对应标注信息，例如辅料、尺寸、包装、位置要求等">${escapeHtml(note.text || "")}</textarea>
+          </div>
+          <button class="btn danger" data-action="modal-delete-sku-note">删除事项</button>
+        </div>
+      `;
+    }
+
+    function openSkuEditor(id, draft = null) {
+      if (!requireAdmin()) return;
+      const sku = draft || findSku(id);
+      if (!sku) return;
+      activeModal = { kind: "sku", id: sku.id, isNew: Boolean(draft) };
+      renderModal({
+        kind: "sku",
+        id: sku.id,
+        title: `${draft ? "新增" : "修改"}产品 SKU`,
+        saveAction: "modal-save-sku",
+        body: `
+          <div class="field-grid">
+            ${renderModalField("SKU 编号", `<input data-modal-sku-field="sku" value="${escapeHtml(sku.sku || "")}" placeholder="AF-SKU-001" />`)}
+            ${renderModalField("产品名称", `<input data-modal-sku-field="name" value="${escapeHtml(sku.name || "")}" placeholder="产品名称" />`)}
+            ${renderModalField("产品尺码", `<input data-modal-sku-field="size" value="${escapeHtml(sku.size || "")}" placeholder="例如 S-XL" />`)}
+            ${renderModalField("产品颜色", `<input data-modal-sku-field="color" value="${escapeHtml(sku.color || "")}" placeholder="颜色" />`)}
+            ${renderModalField("备注", `<textarea data-modal-sku-field="note" placeholder="填写 SKU 备注">${escapeHtml(sku.note || "")}</textarea>`, true)}
+          </div>
+          <div class="sub-box">
+            <div class="sub-head">
+              <h4>图片与标注信息</h4>
+              <div class="line-actions">
+                <button class="btn soft" data-action="modal-add-sku-note">新增图片事项</button>
+              </div>
+            </div>
+            <div class="sub-list" data-modal-sku-notes>
+              ${(sku.standards || []).length ? sku.standards.map(renderSkuEditorNote).join("") : `<div class="empty">暂无图片和标注信息。</div>`}
+            </div>
+          </div>
+        `
+      });
+    }
+
+    function addSkuNoteRowToModal() {
+      const list = els.modalRoot.querySelector("[data-modal-sku-notes]");
+      if (!list) return;
+      if (list.querySelector(".empty")) list.innerHTML = "";
+      list.insertAdjacentHTML("beforeend", renderSkuEditorNote());
     }
 
     function renderAll() {
@@ -1483,7 +1778,7 @@
           const remote = snapshot.data()?.data;
           if (!isValidData(remote)) return;
           cloudState.applyingRemote = true;
-          data = remote;
+          data = migrateData(remote);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           renderAll();
           cloudState.applyingRemote = false;
@@ -1543,6 +1838,8 @@
         "批次名称": batchOf(f.batchId)?.name || "",
         "面料颜色": f.color,
         "产品名称": u.product,
+        "产品尺码": u.size || "",
+        "产品颜色": u.color || "",
         "数量": u.qty,
         "单位": u.unit || "件"
       })));
@@ -1636,31 +1933,35 @@
 
     function addBatch() {
       if (!requireAdmin()) return;
-      const name = prompt("请输入批次名称", `第${data.batches.length + 1}批面料`);
-      if (name === null) return;
       const b = {
         id: uid("batch"),
-        name: name.trim() || `第${data.batches.length + 1}批面料`,
+        name: `第${data.batches.length + 1}批面料`,
         code: `AF-FABRIC-B${String(data.batches.length + 1).padStart(2, "0")}`,
         date: CURRENT_MONTH + "-08"
       };
-      data.batches.push(b);
-      openBatches.add(b.id);
-      persist();
-      renderAll();
-      showToast("已添加批次");
+      openBatchEditor(b.id, b);
     }
 
     function renameBatch(id) {
       if (!requireAdmin()) return;
-      const batch = batchOf(id);
-      if (!batch) return;
-      const name = prompt("请输入新的批次名称", batch.name);
-      if (name === null) return;
-      batch.name = name.trim() || batch.name;
+      openBatchEditor(id);
+    }
+
+    function saveBatch(id) {
+      if (!requireAdmin()) return;
+      const modal = els.modalRoot.querySelector(`[data-modal-kind="batch"]`);
+      if (!modal || modal.dataset.modalId !== id) return;
+      const existing = batchOf(id);
+      const batch = existing || { id };
+      batch.name = modal.querySelector('[data-modal-batch-field="name"]').value.trim() || "未命名批次";
+      batch.code = modal.querySelector('[data-modal-batch-field="code"]').value.trim() || `AF-FABRIC-B${String(data.batches.length + 1).padStart(2, "0")}`;
+      batch.date = modal.querySelector('[data-modal-batch-field="date"]').value.trim() || CURRENT_MONTH + "-08";
+      if (!existing) data.batches.push(batch);
+      openBatches.add(batch.id);
       persist();
+      closeModal();
       renderAll();
-      showToast("批次名称已修改");
+      showToast("批次数据已修改");
     }
 
     function addColor(batchId) {
@@ -1676,44 +1977,44 @@
         note: "",
         usage: []
       };
-      data.fabrics.push(f);
       openBatches.add(batchId);
       openColors.add(f.id);
-      persist();
       renderAll();
-      showToast("已添加颜色面料");
+      openFabricEditor(f.id, f);
     }
 
     function saveFabric(id) {
       if (!requireAdmin()) return;
-      const f = findFabric(id);
-      const card = document.querySelector(`.color-row [data-fabric-field][data-id="${id}"]`)?.closest(".color-row");
-      if (!f || !card) return;
-      f.color = card.querySelector('[data-fabric-field="color"]').value.trim() || "未命名颜色";
-      f.meters = Number(card.querySelector('[data-fabric-field="meters"]').value || 0);
-      f.kg = Number(card.querySelector('[data-fabric-field="kg"]').value || 0);
-      f.status = card.querySelector('[data-fabric-field="status"]').value;
-      f.hex = card.querySelector('[data-fabric-field="hex"]').value.trim() || "#ffffff";
-      f.note = card.querySelector('[data-fabric-field="note"]').value.trim();
-      f.usage = [...card.querySelectorAll("[data-usage-row]")].map(row => ({
-        id: row.dataset.usageRow,
-        product: row.querySelector('[data-usage-field="product"]').value.trim(),
-        qty: Number(row.querySelector('[data-usage-field="qty"]').value || 0),
-        unit: row.querySelector('[data-usage-field="unit"]').value.trim() || "件"
+      const modal = els.modalRoot.querySelector(`[data-modal-kind="fabric"]`);
+      if (!modal || modal.dataset.modalId !== id) return;
+      const existing = findFabric(id);
+      const f = existing || { id, batchId: activeModal?.batchId, usage: [] };
+      f.color = modal.querySelector('[data-modal-fabric-field="color"]').value.trim() || "未命名颜色";
+      f.meters = Number(modal.querySelector('[data-modal-fabric-field="meters"]').value || 0);
+      f.kg = Number(modal.querySelector('[data-modal-fabric-field="kg"]').value || 0);
+      f.status = modal.querySelector('[data-modal-fabric-field="status"]').value;
+      f.hex = modal.querySelector('[data-modal-fabric-field="hex"]').value.trim() || "#ffffff";
+      f.note = modal.querySelector('[data-modal-fabric-field="note"]').value.trim();
+      f.usage = [...modal.querySelectorAll("[data-modal-usage-row]")].map(row => ({
+        id: row.dataset.modalUsageRow,
+        product: row.querySelector('[data-modal-usage-field="product"]').value.trim(),
+        size: row.querySelector('[data-modal-usage-field="size"]').value.trim(),
+        color: row.querySelector('[data-modal-usage-field="color"]').value.trim(),
+        qty: Number(row.querySelector('[data-modal-usage-field="qty"]').value || 0),
+        unit: row.querySelector('[data-modal-usage-field="unit"]').value.trim() || "件"
       })).filter(u => u.product);
+      if (!existing) data.fabrics.push(f);
+      openColors.add(f.id);
       persist();
+      closeModal();
       renderAll();
       showToast("面料数据已修改");
     }
 
     function addProduct(fabricId) {
       if (!requireAdmin()) return;
-      const f = findFabric(fabricId);
-      if (!f) return;
-      f.usage.push({ id: uid("us"), product: "", qty: 0, unit: "件" });
-      openColors.add(fabricId);
-      persist();
-      renderAll();
+      openFabricEditor(fabricId);
+      addFabricUsageRowToModal();
     }
 
     function deleteProduct(fabricId, usageId) {
@@ -1739,12 +2040,10 @@
 
     function addPlanGroup(month) {
       if (!requireAdmin()) return;
-      const day = prompt("请输入日计划名称", month === "2026-05" ? "5月12日计划" : "6月12日计划");
-      if (day === null) return;
       const g = {
         id: uid("pg"),
         month,
-        title: day.trim() || "新日计划",
+        title: month === "2026-05" ? "5月新日计划" : "6月新日计划",
         deliveryStatus: "待交货",
         urgent: false,
         delivery: month + "-12",
@@ -1753,51 +2052,46 @@
         note: "",
         products: []
       };
-      data.planGroups.push(g);
       openGroups.add(g.id);
-      persist();
       renderAll();
-      showToast("已新增日计划");
+      openPlanEditor(g.id, g);
     }
 
     function editPlanGroup(id) {
       if (!requireAdmin()) return;
-      const g = data.planGroups.find(x => x.id === id);
-      if (!g) return;
-      const title = prompt("修改日计划名称", g.title);
-      if (title === null) return;
-      g.title = title.trim() || g.title;
-      const delivery = prompt("修改统一交货时间", g.delivery || "");
-      if (delivery !== null) g.delivery = delivery.trim();
-      const etd = prompt("修改 ETD", g.etd || "");
-      if (etd !== null) g.etd = etd.trim();
-      const eta = prompt("修改 ETA", g.eta || "");
-      if (eta !== null) g.eta = eta.trim();
-      const status = prompt("修改统一交货状态", g.deliveryStatus);
-      if (status !== null) g.deliveryStatus = status.trim() || g.deliveryStatus;
-      g.urgent = confirm("是否标记为紧急计划？点击确定=紧急，取消=普通。");
-      const note = prompt("修改备注", g.note || "");
-      if (note !== null) g.note = note.trim();
-      persist();
-      renderAll();
-      showToast("日计划已修改");
+      openPlanEditor(id);
     }
 
     function savePlanGroup(id) {
       if (!requireAdmin()) return;
-      const g = data.planGroups.find(x => x.id === id);
-      const row = document.querySelector(`.plan-group [data-plan-field][data-group="${id}"]`)?.closest(".plan-group");
-      if (!g || !row) return;
-      g.products = [...row.querySelectorAll("[data-plan-product]")].map(productRow => ({
-        id: productRow.dataset.planProduct,
-        name: productRow.querySelector('[data-plan-field="name"]').value.trim(),
-        size: productRow.querySelector('[data-plan-field="size"]').value.trim(),
-        color: productRow.querySelector('[data-plan-field="color"]').value.trim(),
-        qty: Number(productRow.querySelector('[data-plan-field="qty"]').value || 0)
+      const modal = els.modalRoot.querySelector(`[data-modal-kind="plan"]`);
+      if (!modal || modal.dataset.modalId !== id) return;
+      const existing = data.planGroups.find(x => x.id === id);
+      const g = existing || {
+        id,
+        month: activeModal?.month || CURRENT_MONTH,
+        products: []
+      };
+      g.title = modal.querySelector('[data-modal-plan-field="title"]').value.trim() || "新日计划";
+      g.delivery = modal.querySelector('[data-modal-plan-field="delivery"]').value.trim();
+      g.etd = modal.querySelector('[data-modal-plan-field="etd"]').value.trim();
+      g.eta = modal.querySelector('[data-modal-plan-field="eta"]').value.trim();
+      g.deliveryStatus = modal.querySelector('[data-modal-plan-field="deliveryStatus"]').value;
+      g.urgent = modal.querySelector('[data-modal-plan-field="urgent"]').value === "true";
+      g.note = modal.querySelector('[data-modal-plan-field="note"]').value.trim();
+      g.products = [...modal.querySelectorAll("[data-modal-plan-row]")].map(productRow => ({
+        id: productRow.dataset.modalPlanRow,
+        name: productRow.querySelector('[data-modal-plan-product-field="name"]').value.trim(),
+        size: productRow.querySelector('[data-modal-plan-product-field="size"]').value.trim(),
+        color: productRow.querySelector('[data-modal-plan-product-field="color"]').value.trim(),
+        qty: Number(productRow.querySelector('[data-modal-plan-product-field="qty"]').value || 0)
       })).filter(p => p.name);
+      if (!existing) data.planGroups.push(g);
+      openGroups.add(g.id);
       persist();
+      closeModal();
       renderAll();
-      showToast("日计划产品已修改");
+      showToast("日计划已修改");
     }
 
     function deletePlanGroup(id) {
@@ -1812,12 +2106,8 @@
 
     function addPlanProduct(groupId) {
       if (!requireAdmin()) return;
-      const g = data.planGroups.find(x => x.id === groupId);
-      if (!g) return;
-      g.products.push({ id: uid("pp"), name: "", size: "", color: "", qty: 0 });
-      openGroups.add(groupId);
-      persist();
-      renderAll();
+      openPlanEditor(groupId);
+      addPlanProductRowToModal();
     }
 
     function deletePlanProduct(groupId, productId) {
@@ -1842,32 +2132,37 @@
         note: "",
         standards: []
       };
-      data.skus.unshift(sku);
-      openSkus.add(sku.id);
-      persist();
-      renderAll();
-      showToast("已新增 SKU");
+      openSkuEditor(sku.id, sku);
     }
 
     function saveSku(id) {
       if (!requireAdmin()) return;
-      const sku = findSku(id);
-      const row = document.querySelector(`[data-sku-field][data-id="${id}"]`)?.closest(".sku-row");
-      if (!sku || !row) return;
+      const modal = els.modalRoot.querySelector(`[data-modal-kind="sku"]`);
+      if (!modal || modal.dataset.modalId !== id) return;
+      const existing = findSku(id);
+      const sku = existing || { id, standards: [] };
 
-      sku.sku = row.querySelector('[data-sku-field="sku"]').value.trim() || sku.sku;
-      sku.name = row.querySelector('[data-sku-field="name"]').value.trim() || "未命名产品";
-      sku.size = row.querySelector('[data-sku-field="size"]').value.trim();
-      sku.color = row.querySelector('[data-sku-field="color"]').value.trim();
-      sku.note = row.querySelector('[data-sku-field="note"]').value.trim();
+      sku.sku = modal.querySelector('[data-modal-sku-field="sku"]').value.trim() || sku.sku || `AF-SKU-${String(data.skus.length + 1).padStart(3, "0")}`;
+      sku.name = modal.querySelector('[data-modal-sku-field="name"]').value.trim() || "未命名产品";
+      sku.size = modal.querySelector('[data-modal-sku-field="size"]').value.trim();
+      sku.color = modal.querySelector('[data-modal-sku-field="color"]').value.trim();
+      sku.note = modal.querySelector('[data-modal-sku-field="note"]').value.trim();
+      sku.standards = [...modal.querySelectorAll("[data-modal-sku-note]")].map(noteRow => {
+        const noteId = noteRow.dataset.modalSkuNote;
+        const fileInput = noteRow.querySelector(`[data-note-file="${noteId}"]`);
+        return {
+          id: noteId,
+          image: noteRow.dataset.existingImage || "",
+          text: noteRow.querySelector(`[data-note-text="${noteId}"]`)?.value.trim() || "",
+          hasNewFile: Boolean(fileInput?.files?.[0])
+        };
+      }).filter(note => note.text || note.image || note.hasNewFile).map(({ hasNewFile, ...note }) => note);
 
-      sku.standards.forEach(note => {
-        const text = row.querySelector(`[data-note-text="${note.id}"]`);
-        if (text) note.text = text.value.trim();
-      });
-
-      saveSkuImages(row, sku).then(() => {
+      saveSkuImages(modal, sku).then(() => {
+        if (!existing) data.skus.unshift(sku);
+        openSkus.add(sku.id);
         persist();
+        closeModal();
         renderAll();
         showToast("SKU 数据已修改");
       });
@@ -1906,14 +2201,8 @@
 
     function addSkuNote(skuId) {
       if (!requireAdmin()) return;
-      const sku = findSku(skuId);
-      if (!sku) return;
-      sku.standards = sku.standards || [];
-      sku.standards.push({ id: uid("sn"), image: "", text: "" });
-      openSkus.add(skuId);
-      persist();
-      renderAll();
-      showToast("已新增图片事项");
+      openSkuEditor(skuId);
+      addSkuNoteRowToModal();
     }
 
     function deleteSkuNote(skuId, noteId) {
@@ -1939,6 +2228,7 @@
 
       if (action === "rename-batch") renameBatch(actionEl.dataset.id);
       if (action === "add-color") addColor(actionEl.dataset.id);
+      if (action === "edit-fabric") openFabricEditor(actionEl.dataset.id);
       if (action === "save-fabric") saveFabric(actionEl.dataset.id);
       if (action === "delete-fabric") deleteFabric(actionEl.dataset.id);
       if (action === "add-product") addProduct(actionEl.dataset.fabric);
@@ -1951,6 +2241,23 @@
       if (action === "add-plan-product") addPlanProduct(actionEl.dataset.group);
       if (action === "delete-plan-product") deletePlanProduct(actionEl.dataset.group, actionEl.dataset.product);
 
+      if (action === "close-modal") closeModal();
+      if (action === "modal-save-batch") saveBatch(actionEl.dataset.id);
+      if (action === "modal-add-fabric-product") addFabricUsageRowToModal();
+      if (action === "modal-delete-fabric-product") actionEl.closest("[data-modal-usage-row]")?.remove();
+      if (action === "modal-save-fabric") saveFabric(actionEl.dataset.id);
+      if (action === "modal-add-plan-product") addPlanProductRowToModal();
+      if (action === "modal-delete-plan-product") actionEl.closest("[data-modal-plan-row]")?.remove();
+      if (action === "modal-save-plan-group") savePlanGroup(actionEl.dataset.id);
+
+      if (action === "edit-sku") openSkuEditor(actionEl.dataset.id);
+      if (action === "modal-add-sku-note") addSkuNoteRowToModal();
+      if (action === "modal-delete-sku-note") {
+        actionEl.closest("[data-modal-sku-note]")?.remove();
+        const list = els.modalRoot.querySelector("[data-modal-sku-notes]");
+        if (list && !list.children.length) list.innerHTML = `<div class="empty">暂无图片和标注信息。</div>`;
+      }
+      if (action === "modal-save-sku") saveSku(actionEl.dataset.id);
       if (action === "delete-sku") deleteSku(actionEl.dataset.id);
       if (action === "add-sku-note") addSkuNote(actionEl.dataset.id);
       if (action === "save-sku") saveSku(actionEl.dataset.id);
@@ -1985,6 +2292,12 @@
     els.planSearch.addEventListener("input", renderPlanPage);
     els.skuSearch.addEventListener("input", renderSkuPage);
     document.addEventListener("click", onDocClick);
+    els.modalRoot.addEventListener("click", e => {
+      if (e.target === els.modalRoot) closeModal();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && !els.modalRoot.hidden) closeModal();
+    });
 
     els.tabBtns.forEach(btn => {
       btn.addEventListener("click", () => {
